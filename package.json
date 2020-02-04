@@ -7,6 +7,12 @@
     "socket.io": "^1.7.3"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "parcel ./src/index.html --public-url ./",
+    "build": "parcel build ./src/index.html --public-url ./"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.4",
+    "sass": "^1.25.0"
   }
 }
