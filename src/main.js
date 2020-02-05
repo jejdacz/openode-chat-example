@@ -28,8 +28,7 @@ const createMessage = msg => {
   const $m = document.createElement("li");
   $m.id = "id"+msg.date;
   $m.append($d);
-  $m.append($t);  
-  $m.classList.add("rounded");
+  $m.append($t);   
   
   $m.onclick = function() {    
     toggleDone(msg.date);

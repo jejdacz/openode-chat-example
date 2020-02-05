@@ -1,0 +1,81 @@
+@import "https://fonts.googleapis.com/css?family=Montserrat&display=swap";
+#messages li, form button, form input {
+  border-radius: 0.3rem;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Montserrat", sans-serif;
+  background: #0d0d0d;
+  color: #f2f2f2;
+  height: 90vh;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  letter-spacing: 0.07rem;
+  line-height: 1.5;
+}
+
+form {
+  display: flex;
+  margin-top: auto;
+}
+
+form input {
+  font-size: 1rem;
+  border: 0;
+  padding: 0.7rem;
+  color: #364e56;
+  background: #bdd4db;
+  margin-right: 1rem;
+  width: 70%;
+  flex-grow: 1;
+}
+
+form button {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #bdd4db;
+  background-color: #2d4953;
+  border: none;
+  padding: 0 1rem;
+  line-height: 3rem;
+  flex-grow: 0.1;
+}
+
+#messages {
+  list-style-type: none;
+  margin-bottom: 1rem;
+  padding: 0;
+  overflow-y: scroll;
+}
+#messages li {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #1a1a1a;
+}
+#messages li.hidden {
+  display: none;
+}
+#messages li.done p {
+  text-decoration: line-through;
+}
+#messages li small {
+  font-size: 0.75rem;
+  display: block;
+  color: #8d9a9e;
+}
+#messages li p {
+  color: #71bacc;
+  letter-spacing: 0.1rem;
+}
+#messages li:nth-child(odd) {
+  background: #333333;
+}
+
+/*# sourceMappingURL=main.1f19ae8e.css.map */
