@@ -4311,12 +4311,6 @@ var _socket = _interopRequireDefault(require("./socket.io"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 var messages = {};
 
 var scrollDown = function scrollDown() {
@@ -4358,7 +4352,9 @@ document.querySelector("form").onsubmit = function () {
 };
 
 socket.on("message", function (msg) {
-  var message = JSON.parse(msg);
+  var message = JSON.parse(msg); // abort when same message
+
+  if (messages[message.date]) return;
   document.querySelector("#messages").append(createMessage(message));
   messages[message.date] = message;
   scrollDown();
@@ -4373,7 +4369,8 @@ socket.on("undone", function (id) {
 });
 socket.on("connection", function (msg) {
   var serverHistory = JSON.parse(msg);
-  messages = _objectSpread({}, serverHistory);
+  messages = serverHistory;
+  document.querySelector("#messages").innerHTML = "";
 
   for (var m in messages) {
     document.querySelector("#messages").append(createMessage(messages[m]));
@@ -4409,7 +4406,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "44393" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "42941" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

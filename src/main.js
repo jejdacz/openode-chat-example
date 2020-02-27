@@ -3,10 +3,13 @@ import io from "./socket.io";
 
 let messages = {};
 
-const scrollDown = () => document.querySelector("#messages").scrollTo(0, document.querySelector("#messages").scrollHeight);
+const scrollDown = () =>
+  document
+    .querySelector("#messages")
+    .scrollTo(0, document.querySelector("#messages").scrollHeight);
 
-const toggleDone = (id) => {
-  messages[id].done  ? socket.emit("undone", id) : socket.emit("done", id);  
+const toggleDone = id => {
+  messages[id].done ? socket.emit("undone", id) : socket.emit("done", id);
 };
 
 const createMessage = msg => {
@@ -26,18 +29,18 @@ const createMessage = msg => {
   const $t = document.createElement("p");
   $t.innerText = msg.text;
   const $m = document.createElement("li");
-  $m.id = "id"+msg.date;
+  $m.id = "id" + msg.date;
   $m.append($d);
-  $m.append($t);   
-  
-  $m.onclick = function() {    
+  $m.append($t);
+
+  $m.onclick = function() {
     toggleDone(msg.date);
   };
 
   if (msg.done) {
     $m.classList.add("done");
   }
-  
+
   return $m;
 };
 
@@ -51,6 +54,10 @@ document.querySelector("form").onsubmit = function() {
 
 socket.on("message", function(msg) {
   const message = JSON.parse(msg);
+
+  // abort when same message
+  if (messages[message.date]) return;
+
   document.querySelector("#messages").append(createMessage(message));
   messages[message.date] = message;
 
@@ -59,23 +66,24 @@ socket.on("message", function(msg) {
 
 socket.on("done", function(id) {
   messages[id].done = true;
-  document.querySelector("#id"+id).classList.add("done");
+  document.querySelector("#id" + id).classList.add("done");
 });
 
 socket.on("undone", function(id) {
   messages[id].done = false;
-  document.querySelector("#id"+id).classList.remove("done");
+  document.querySelector("#id" + id).classList.remove("done");
 });
 
 socket.on("connection", function(msg) {
   const serverHistory = JSON.parse(msg);
-  
-  messages = {...serverHistory};
-  
+
+  messages = serverHistory;
+
+  document.querySelector("#messages").innerHTML = "";
+
   for (const m in messages) {
     document.querySelector("#messages").append(createMessage(messages[m]));
   }
-  
+
   scrollDown();
 });
-

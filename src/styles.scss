@@ -1,3 +1,4 @@
+@use "config";
 @import "https://fonts.googleapis.com/css?family=Montserrat&display=swap";
 
 $d1: 1rem;
@@ -13,20 +14,28 @@ $d1: 1rem;
 }
 
 body {
+  margin: 0 auto;
   font-family: "Montserrat", sans-serif;
   background: hsl(0, 0%, 5%);
   color: hsl(0, 0%, 95%);
-  height: 90vh;
+  /*height: 90vh;
   padding: $d1;
   display: flex;
-  flex-direction: column;
+  flex-direction: column;*/
   letter-spacing: 0.07rem;
   line-height: 1.5;
+  width: 100%;
 }
 
 form {
   display: flex;
   margin-top: auto;
+  /*----*/
+  position: fixed;
+  bottom: 0;
+  width: inherit;
+  padding: $d1;
+  background: inherit;
 }
 
 form input {
@@ -55,9 +64,8 @@ form button {
 
 #messages {
   list-style-type: none;
-  margin-bottom: $d1;
-  padding: 0;
-  overflow-y: scroll;
+  padding: $d1 $d1 7 * $d1 $d1;
+  /*overflow-y: auto;*/
 
   li {
     @extend %round-box;
@@ -89,5 +97,11 @@ form button {
 
   li:nth-child(odd) {
     background: hsl(0, 0%, 20%);
+  }
+}
+
+@include config.mediaLg {
+  body {
+    width: 40rem;
   }
 }
