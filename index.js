@@ -14,9 +14,35 @@ const cookieParser = require("cookie-parser");
 let messages = {};
 
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.COOKIE_SECRET));
 
 app.use(express.static(__dirname + "/dist"));
+
+// cookie auth middleware
+
+app.use((req, res, next) => {
+  const authToken = req.signedCookies["auth"];
+  //req.user = authTokens[authToken];
+  next();
+});
+
+app.get("/login", (req, res) => {
+  res.sendFile(__dirname + "/dist/login.html");
+});
+
+app.post("/login", (req, res) => {
+  const password = req.body.password;
+  if (password === process.env.HANDLER_PASSWORD) {
+    //set cookie
+    res.cookie("auth", "secretToken", {
+      maxAge: 3600000,
+      httpOnly: true,
+      signed: true
+      //secure: true   https only
+    });
+    res.redirect("/handler"); //redirect to protected area
+  }
+});
 
 //app.get("/", (req, res) => res.sendFile(__dirname + "/dist/index.html"));
 
