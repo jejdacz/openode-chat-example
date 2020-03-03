@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "my first socket.io app",
   "dependencies": {
+    "cookie": "^0.4.0",
     "cookie-parser": "^1.4.4",
     "dotenv": "^8.2.0",
     "express": "^4.15.2",
@@ -12,11 +13,13 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "parcel ./src/index.html ./src/login.html --public-url ./",
-    "build": "rm ./dist/* & parcel build ./src/index.html ./src/login.html --public-url ./",
+    "server": "nodemon index.js",
+    "dev": "parcel ./src/handler.html ./src/user.html ./src/login.html --public-url ./",
+    "build": "rm ./dist/* & parcel build ./src/handler.html ./src/user.html ./src/login.html --public-url ./",
     "test-path": "node ./test/index.js"
   },
   "devDependencies": {
+    "nodemon": "^2.0.2",
     "parcel-bundler": "^1.12.4",
     "sass": "^1.25.0"
   }

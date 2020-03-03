@@ -87,3 +87,7 @@ socket.on("connection", function(msg) {
 
   scrollDown();
 });
+
+socket.on("disconnect", function() {
+  alert("disconnected");
+});
