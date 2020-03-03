@@ -1,7 +1,7 @@
-import "./styles.scss";
 import io from "./socket.io";
 
 let messages = {};
+let auth = "";
 
 const scrollDown = () =>
   document
@@ -10,6 +10,10 @@ const scrollDown = () =>
 
 const toggleDone = id => {
   messages[id].done ? socket.emit("undone", id) : socket.emit("done", id);
+};
+
+const removeMessage = id => {
+  socket.emit("remove", id);
 };
 
 const createMessage = msg => {
@@ -26,12 +30,23 @@ const createMessage = msg => {
       .getMinutes()
       .toString()
       .padStart(2, "0");
+  const $n = document.createElement("h5");
+  $n.innerText = msg.name;
   const $t = document.createElement("p");
   $t.innerText = msg.text;
   const $m = document.createElement("li");
   $m.id = "id" + msg.date;
+  const $e = document.createElement("button");
+  $e.innerText = "x";
+  $e.onclick = function(e) {
+    e.stopPropagation();
+    removeMessage(msg.date);
+  };
   $m.append($d);
+  $m.append($n);
   $m.append($t);
+
+  if (auth === msg.author) $m.append($e);
 
   $m.onclick = function() {
     toggleDone(msg.date);
@@ -74,7 +89,16 @@ socket.on("undone", function(id) {
   document.querySelector("#id" + id).classList.remove("done");
 });
 
-socket.on("connection", function(msg) {
+socket.on("remove", function(id) {
+  delete messages[id];
+  document.querySelector("#id" + id).remove();
+});
+
+socket.on("authenticated", function(msg) {
+  auth = msg;
+});
+
+socket.on("init", function(msg) {
   const serverHistory = JSON.parse(msg);
 
   messages = serverHistory;
@@ -89,5 +113,5 @@ socket.on("connection", function(msg) {
 });
 
 socket.on("disconnect", function() {
-  alert("disconnected");
+  console.warn("disconnected");
 });
