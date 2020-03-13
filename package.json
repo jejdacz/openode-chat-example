@@ -1,7 +1,9 @@
 {
-  "name": "socket-chat-example",
-  "version": "0.0.1",
-  "description": "my first socket.io app",
+  "name": "handler-app",
+  "version": "0.8.0",
+  "description": "chat app for ordering parts from storage",
+  "author": "Marek Mego",
+  "license": "MIT",
   "dependencies": {
     "cookie": "^0.4.0",
     "cookie-parser": "^1.4.4",
