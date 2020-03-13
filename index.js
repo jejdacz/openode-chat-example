@@ -2,59 +2,55 @@ require("dotenv").config();
 
 const express = require("express");
 const app = express();
-const http = require("http").Server(app);
+const http = require("http").createServer(app);
 const io = require("socket.io")(http);
+const { userSocket, handlerSocket } = require("./socketHandlers");
 const port = process.env.PORT || 3000;
 const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
 const cookie = require("cookie");
+const messages = require("./messages");
 
-// TODO
-// store messages to file
-// remove messages older than 1 hour
-
-let messages = {};
-const handlers = {};
 const users = {};
 
 const generateAuthToken = () => {
   return crypto.randomBytes(30).toString("hex");
 };
 
-const getHash = s =>
-  crypto
-    .createHash("sha256")
-    .update(s)
-    .digest("base64");
-
-const userToken = generateAuthToken();
-const handlerToken = generateAuthToken();
+const verifyToken = id => (users.hasOwnProperty(id) ? users[id] : undefined);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
 app.use(express.static(__dirname + "/dist"));
 
-// cookie auth middleware
+// auth cookie middleware
 app.use((req, res, next) => {
   const authToken = req.signedCookies["auth"];
-  if (handlers[authToken]) {
-    req.handler = true;
-    console.log("handler verified");
-  } else if (users[authToken]) {
-    req.user = true;
-    console.log("user verified");
+
+  if (authToken) {
+    const user = verifyToken(authToken);
+
+    if (user) {
+      req.user = user;
+    }
   }
   next();
 });
 
-app.get("/", (req, res) => {
-  if (req.handler) {
-    res.redirect("/handler");
-  } else if (req.user) {
-    res.redirect("/user");
-  } else {
+const redirectUnauthorized = (req, res, next) => {
+  if (!req.user) {
     res.redirect("/login");
+  } else {
+    next();
+  }
+};
+
+app.get("/", redirectUnauthorized, (req, res) => {
+  if (req.user.userClass === "handler") {
+    res.redirect("/handler");
+  } else if (req.user.userClass === "user") {
+    res.redirect("/user");
   }
 });
 
@@ -62,29 +58,25 @@ app.get("/login", (req, res) => {
   res.sendFile(__dirname + "/dist/login.html");
 });
 
-app.get("/handler", (req, res) => {
-  if (req.handler) {
+app.get("/handler", redirectUnauthorized, (req, res) => {
+  if (req.user.userClass === "handler") {
     res.sendFile(__dirname + "/dist/handler.html");
-  } else {
-    res.redirect("/login");
   }
 });
 
-app.get("/user", (req, res) => {
-  if (req.user) {
+app.get("/user", redirectUnauthorized, (req, res) => {
+  if (req.user.userClass === "user") {
     res.sendFile(__dirname + "/dist/user.html");
-  } else {
-    res.redirect("/login");
   }
 });
 
 app.post("/login", (req, res) => {
   const password = req.body.password;
   const name = req.body.name || "noname";
-  if (password === process.env.HANDLER_PASSWORD) {
-    console.log("handler logged");
+
+  const saveUser = userClass => {
     const token = generateAuthToken();
-    handlers[token] = name;
+    users[token] = { id: token, name, userClass };
     // set cookie
     res.cookie("auth", token, {
       maxAge: 3600000,
@@ -92,36 +84,25 @@ app.post("/login", (req, res) => {
       signed: true
       //secure: true   https only
     });
+  };
+
+  if (password === process.env.HANDLER_PASSWORD) {
+    saveUser("handler");
     res.redirect("/handler"); // redirect to protected area
   } else if (password === process.env.USER_PASSWORD) {
-    console.log("user logged");
-    const token = generateAuthToken();
-    users[token] = name;
-    // set cookie
-    res.cookie("auth", token, {
-      maxAge: 3600000,
-      httpOnly: true,
-      signed: true
-      //secure: true   https only
-    });
+    saveUser("user");
     res.redirect("/user"); //redirect to protected area
   } else {
     res.redirect("/login");
   }
 });
 
-app.get("/logout", (req, res) => {
-  if (res.user) delete users[res.user];
-  if (res.handler) delete handlers[res.handler];
+app.get("/logout", redirectUnauthorized, (req, res) => {
+  delete users[req.user.id];
   res.clearCookie("auth");
   res.clearCookie("io");
   res.redirect("/login");
 });
-
-// TODO
-// login route
-// handler route
-// user route
 
 app.use(function(err, req, res, next) {
   if (err.name === "UnauthorizedError") {
@@ -131,75 +112,34 @@ app.use(function(err, req, res, next) {
   }
 });
 
-// TODO
-// message sender id
-// message remove
-// create rooms handlers users
-
 io.on("connection", function(socket) {
-  const cookies = cookie.parse(socket.handshake.headers.cookie);
-
   // parse auth cookie
-  const auth = cookieParser.signedCookie(
+  const cookies = cookie.parse(socket.handshake.headers.cookie);
+  const authCookie = cookieParser.signedCookie(
     cookies.auth,
     process.env.COOKIE_SECRET
   );
 
+  // test cookie
+  if (!authCookie) {
+    socket.disconnect(true);
+    return;
+  }
+
+  // authenticate user
+  const user = verifyToken(authCookie);
+  if (!user) {
+    socket.disconnect(true);
+    return;
+  }
+
   // is handler
-  if (handlers[auth]) {
-    socket.emit("authenticated", auth);
-    socket.emit("init", JSON.stringify(messages));
-    socket.on("message", function(msg) {
-      const m = {
-        author: auth,
-        name: handlers[auth],
-        text: msg,
-        date: Date.now(),
-        done: false
-      };
-      messages[m.date] = m;
-      io.emit("message", JSON.stringify(m));
-    });
-    socket.on("done", function(msg) {
-      if (messages.hasOwnProperty(msg)) {
-        messages[msg].done = true;
-        io.emit("done", msg);
-      }
-    });
-    socket.on("undone", function(msg) {
-      if (messages.hasOwnProperty(msg)) {
-        messages[msg].done = false;
-        io.emit("undone", msg);
-      }
-    });
-    socket.on("remove", function(msg) {
-      if (messages.hasOwnProperty(msg)) {
-        delete messages[msg];
-        io.emit("remove", msg);
-      }
-    });
+  if (user.userClass === "handler") {
+    handlerSocket(io, socket, user, messages);
   }
   // is user
-  else if (users[auth]) {
-    socket.emit("authenticated", auth);
-    socket.emit("init", JSON.stringify(messages));
-    socket.on("message", function(msg) {
-      const m = {
-        author: auth,
-        name: users[auth],
-        text: msg,
-        date: Date.now(),
-        done: false
-      };
-      messages[m.date] = m;
-      io.emit("message", JSON.stringify(m));
-    });
-    socket.on("remove", function(msg) {
-      if (messages.hasOwnProperty(msg) && messages[msg].author === auth) {
-        delete messages[msg];
-        io.emit("remove", msg);
-      }
-    });
+  else if (user.userClass === "user") {
+    userSocket(io, socket, user, messages);
   }
   // unauthorized
   else {

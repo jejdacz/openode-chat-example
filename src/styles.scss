@@ -1,10 +1,20 @@
 @use "config";
 @import "https://fonts.googleapis.com/css?family=Montserrat&display=swap";
 
-$d1: 1rem;
+$d1: 1rem; // seems useless!!
+$primary-color: hsl(195, 30%, 25%);
+$danger-color: #cc1e1e;
+$warning-color: #b96712;
 
 %round-box {
   border-radius: 0.3rem;
+}
+
+%fixed-form {
+  position: fixed;
+  bottom: 0;
+  width: inherit;
+  background: inherit;
 }
 
 * {
@@ -15,60 +25,117 @@ $d1: 1rem;
 
 body {
   margin: 0 auto;
+  padding-top: 2 * $d1;
   font-family: "Montserrat", sans-serif;
   background: hsl(0, 0%, 5%);
   color: hsl(0, 0%, 95%);
-  /*height: 90vh;
-  padding: $d1;
-  display: flex;
-  flex-direction: column;*/
   letter-spacing: 0.07rem;
   line-height: 1.5;
   width: 100%;
 }
 
-form {
-  display: flex;
-  margin-top: auto;
-  /*----*/
-  position: fixed;
-  bottom: 0;
-  width: inherit;
-  padding: $d1;
-  background: inherit;
+input,
+button {
+  @extend %round-box;
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+  border: none;
 }
 
-form input {
-  @extend %round-box;
+input {
   font-size: 1rem;
-  border: 0;
   padding: 0.7rem;
   color: #364e56;
   background: hsl(195, 30%, 80%);
-  margin-right: $d1;
-  width: 70%;
-  flex-grow: 1;
+  height: 3 * $d1;
 }
 
-form button {
-  @extend %round-box;
-  font-size: 0.8rem;
+button {
+  font-size: 1.2rem;
   font-weight: 800;
-  color: hsl(194, 29%, 80%);
-  background-color: hsl(195, 30%, 25%);
-  border: none;
+  color: #f2f6f7;
   padding: 0 $d1;
   line-height: 3 * $d1;
-  flex-grow: 0.1;
+  user-select: none;
+  transition: all 0.2s ease-in;
+
+  @include config.buttonVariant($primary-color);
+
+  &.danger {
+    @include config.buttonVariant($danger-color);
+  }
+
+  &.warning {
+    @include config.buttonVariant($warning-color);
+  }
+}
+
+form {
+  display: grid;
+  padding: $d1;
+  gap: $d1;
+
+  div.inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: $d1;
+  }
+}
+
+#login-form {
+  input,
+  button {
+    max-width: 20rem;
+  }
+}
+
+#handler-form {
+  @extend %fixed-form;
+  display: flex;
+
+  input {
+    margin-right: $d1;
+    flex-grow: 1;
+  }
+
+  button {
+    flex-grow: 0.1;
+    margin-left: 0;
+    width: auto;
+  }
+}
+
+.collapse-subject {
+  transition: all 0.5s ease-in;
+}
+
+#user-form {
+  @extend %fixed-form;
+  border-top: 1px solid fade-out(white, 0.6);
+
+  &.collapsed {
+    transform: translate(0, calc(100% - 5rem));
+    border-width: 10px;
+  }
+
+  label {
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: fade-out(white, 0.4);
+  }
 }
 
 #messages {
   list-style-type: none;
-  padding: $d1 $d1 7 * $d1 $d1;
-  /*overflow-y: auto;*/
+  padding: $d1 $d1 5rem $d1;
 
-  li {
+  li.message {
     @extend %round-box;
+    display: grid;
+    gap: 0.5 * $d1;
     padding: $d1;
     margin-bottom: $d1;
     background: hsl(0, 0%, 10%);
@@ -78,26 +145,59 @@ form button {
     }
 
     &.done {
-      p {
-        text-decoration: line-through;
-      }
+      box-shadow: 0 0 1px 2px #38be0f;
     }
 
     small {
+      line-height: 1;
       font-size: 0.75rem;
       display: block;
-      color: #8d9a9e;
+      color: #cacaca;
     }
 
-    p {
-      color: #71bacc;
-      letter-spacing: 0.1rem;
+    h4 {
+      font-size: 1.2rem;
+      line-height: 1.2;
+      color: #ececec;
+    }
+
+    ul {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+      gap: 0.5 * $d1;
+      list-style-type: none;
+
+      li {
+        h5 {
+          font-weight: 200;
+          font-size: 0.75rem;
+
+          &::after {
+            content: ":";
+          }
+        }
+
+        p {
+          color: #71bacc;
+          letter-spacing: 0.12rem;
+          font-size: 0.9rem;
+        }
+      }
     }
   }
 
-  li:nth-child(odd) {
+  li.message:nth-child(odd) {
     background: hsl(0, 0%, 20%);
   }
+
+  li.message.canceled {
+    background-color: rgb(134, 28, 20);
+  }
+}
+
+.caption {
+  text-align: center;
+  margin: 2 * $d1 0;
 }
 
 @include config.mediaLg {

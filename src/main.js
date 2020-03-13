@@ -1,112 +1,95 @@
-import io from "./socket.io";
+const io = require("./socket.io");
+const { userMessageParser, handlerMessageParser } = require("./messageParsers");
+const socket = io();
 
-let messages = {};
-let auth = "";
+let user = {};
+let messageParser;
 
-const scrollDown = () =>
-  document
-    .querySelector("#messages")
-    .scrollTo(0, document.querySelector("#messages").scrollHeight);
+const scrollDown = () => window.scrollTo(0, document.body.scrollHeight);
 
-const toggleDone = id => {
-  messages[id].done ? socket.emit("undone", id) : socket.emit("done", id);
+/* FORM SUBMIT */
+
+document.querySelector(".io-form").onsubmit = function() {
+  const data = [];
+  const inp = document.querySelectorAll("input");
+  inp.forEach(element => {
+    data.push({ name: element.name, value: element.value });
+    element.value = "";
+  });
+  socket.emit("message", data);
+  return false;
 };
 
-const removeMessage = id => {
+document.querySelectorAll(".collapse-control").forEach(
+  e =>
+    (e.onclick = function() {
+      document
+        .querySelector("#" + e.getAttribute("control-target"))
+        .classList.toggle("collapsed");
+    })
+);
+
+const removeMessage = id => () => {
   socket.emit("remove", id);
 };
 
-const createMessage = msg => {
-  const date = new Date(msg.date);
-
-  const $d = document.createElement("small");
-  $d.innerText =
-    date
-      .getHours()
-      .toString()
-      .padStart(2, "0") +
-    " : " +
-    date
-      .getMinutes()
-      .toString()
-      .padStart(2, "0");
-  const $n = document.createElement("h5");
-  $n.innerText = msg.name;
-  const $t = document.createElement("p");
-  $t.innerText = msg.text;
-  const $m = document.createElement("li");
-  $m.id = "id" + msg.date;
-  const $e = document.createElement("button");
-  $e.innerText = "x";
-  $e.onclick = function(e) {
-    e.stopPropagation();
-    removeMessage(msg.date);
-  };
-  $m.append($d);
-  $m.append($n);
-  $m.append($t);
-
-  if (auth === msg.author) $m.append($e);
-
-  $m.onclick = function() {
-    toggleDone(msg.date);
-  };
-
-  if (msg.done) {
-    $m.classList.add("done");
-  }
-
-  return $m;
+const cancelMessage = id => () => {
+  socket.emit("cancel", id);
 };
 
-var socket = io();
-
-document.querySelector("form").onsubmit = function() {
-  socket.emit("message", document.querySelector("#m").value);
-  document.querySelector("#m").value = "";
-  return false;
+const toggleDone = id => () => {
+  socket.emit("toggleDone", id);
 };
+
+const addMessage = message =>
+  message && document.querySelector("#messages").append(message);
+
+/*** SOCKET EVENTS ***/
 
 socket.on("message", function(msg) {
   const message = JSON.parse(msg);
 
-  // abort when same message
-  if (messages[message.date]) return;
-
-  document.querySelector("#messages").append(createMessage(message));
-  messages[message.date] = message;
+  addMessage(messageParser(message));
 
   scrollDown();
 });
 
 socket.on("done", function(id) {
-  messages[id].done = true;
   document.querySelector("#id" + id).classList.add("done");
 });
 
 socket.on("undone", function(id) {
-  messages[id].done = false;
   document.querySelector("#id" + id).classList.remove("done");
 });
 
 socket.on("remove", function(id) {
-  delete messages[id];
   document.querySelector("#id" + id).remove();
 });
 
-socket.on("authenticated", function(msg) {
-  auth = msg;
+socket.on("cancel", function(id) {
+  document.querySelector("#id" + id).classList.add("canceled");
 });
 
-socket.on("init", function(msg) {
-  const serverHistory = JSON.parse(msg);
+socket.on("authenticated", function(msg) {
+  user.id = msg.id;
+  user.userClass = msg.userClass;
 
-  messages = serverHistory;
+  if (user.userClass === "user") {
+    messageParser = userMessageParser({ cancelMessage, user });
+  } else if (user.userClass === "handler") {
+    messageParser = handlerMessageParser({ removeMessage, toggleDone });
+  } else {
+    throw Error("Authentication failed, invalid userClass.");
+  }
+});
+
+socket.on("history", function(msg) {
+  const serverHistory = JSON.parse(msg);
 
   document.querySelector("#messages").innerHTML = "";
 
-  for (const m in messages) {
-    document.querySelector("#messages").append(createMessage(messages[m]));
+  for (const m in serverHistory) {
+    addMessage(messageParser(serverHistory[m]));
   }
 
   scrollDown();
@@ -115,3 +98,27 @@ socket.on("init", function(msg) {
 socket.on("disconnect", function() {
   console.warn("disconnected");
 });
+
+/****  TEST  ****/
+
+// const u = { id: "1234AB", name: "Papo", userClass: "user" };
+
+// const mp = userMessageParser({ cancelMessage, user: u });
+
+// const m = {
+//   id: Date.now(),
+//   date: Date.now(),
+//   authorId: "1234AB",
+//   authorName: "Pepa Nahlovsky",
+//   done: false,
+//   canceled: false,
+//   payload: [
+//     { name: "part-number", value: "324544658" },
+//     { name: "count", value: "2" },
+//     { name: "machine", value: "865545" },
+//     { name: "place", value: "12" },
+//     { name: "priority", value: "high" }
+//   ]
+// };
+
+// addMessage(mp(m));

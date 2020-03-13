@@ -4230,100 +4230,269 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     };
   }]);
 });
-},{"buffer":"../node_modules/buffer/index.js"}],"main.js":[function(require,module,exports) {
-"use strict";
+},{"buffer":"../node_modules/buffer/index.js"}],"messageBuilder.js":[function(require,module,exports) {
+var messageBuilder = function messageBuilder() {
+  var $container = document.createElement("li");
+  $container.classList.add("message");
 
-var _socket = _interopRequireDefault(require("./socket.io"));
+  var createId = function createId(val) {
+    return $container.id = "id" + val;
+  };
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+  var createDate = function createDate(val) {
+    var date = new Date(val);
+    var $d = document.createElement("small");
+    $d.innerText = date.getHours().toString().padStart(2, "0") + " : " + date.getMinutes().toString().padStart(2, "0");
+    $container.append($d);
+  };
 
-var messages = {};
-var auth = "";
+  var createAuthorName = function createAuthorName(val) {
+    var $n = document.createElement("h4");
+    $n.innerText = val;
+    $container.append($n);
+  };
+
+  var createText = function createText(val) {
+    var $t = document.createElement("p");
+    $t.innerText = val;
+    $container.append($t);
+  };
+
+  var createPayload = function createPayload(payload) {
+    var createItem = function createItem(_ref) {
+      var name = _ref.name,
+          value = _ref.value;
+      var $li = document.createElement("li");
+      var $name = document.createElement("h5");
+      $name.innerText = name;
+      var $value = document.createElement("p");
+      $value.innerText = value;
+      $li.append($name);
+      $li.append($value);
+      return $li;
+    };
+
+    var $ul = document.createElement("ul");
+    payload.forEach(function (i) {
+      return $ul.append(createItem(i));
+    });
+    $container.append($ul);
+  };
+
+  var createRemoveButton = function createRemoveButton(cb) {
+    var $e = document.createElement("button");
+    $e.classList.add("danger");
+    $e.innerText = "Remove";
+
+    $e.onclick = function (e) {
+      e.stopPropagation();
+      cb();
+    };
+
+    $container.append($e);
+  };
+
+  var createCancelButton = function createCancelButton(cb) {
+    var $e = document.createElement("button");
+    $e.classList.add("warning");
+    $e.innerText = "cancel";
+
+    $e.onclick = function (e) {
+      e.stopPropagation();
+      cb();
+      $e.remove();
+    };
+
+    $container.append($e);
+  };
+
+  var createDoneButton = function createDoneButton(cb) {
+    $container.onclick = function () {
+      cb();
+    };
+  };
+
+  var renderDone = function renderDone(val) {
+    val ? $container.classList.add("done") : $container.classList.remove("done");
+  };
+
+  var renderCanceled = function renderCanceled(val) {
+    val ? $container.classList.add("canceled") : $container.classList.remove("canceled");
+  };
+
+  var build = function build() {
+    return $container;
+  };
+
+  return {
+    createId: createId,
+    createCancelButton: createCancelButton,
+    createRemoveButton: createRemoveButton,
+    createDate: createDate,
+    createText: createText,
+    createAuthorName: createAuthorName,
+    createPayload: createPayload,
+    renderDone: renderDone,
+    renderCanceled: renderCanceled,
+    createDoneButton: createDoneButton,
+    build: build
+  };
+};
+
+module.exports = messageBuilder;
+},{}],"messageParsers.js":[function(require,module,exports) {
+var messageBuilder = require("./messageBuilder");
+
+var userMessageParser = function userMessageParser(_ref) {
+  var cancelMessage = _ref.cancelMessage,
+      user = _ref.user;
+  return function (m) {
+    var mb = messageBuilder();
+    mb.createId(m.id);
+    mb.createDate(m.date);
+    mb.createAuthorName(m.authorName);
+    mb.createPayload(m.payload);
+
+    if (m.hasOwnProperty("canceled")) {
+      mb.renderCanceled(m.canceled);
+
+      if (m.authorId === user.id) {
+        !m.canceled && mb.createCancelButton(cancelMessage(m.id));
+      }
+    }
+
+    m.hasOwnProperty("done") && mb.renderDone(m.done);
+    return mb.build();
+  };
+};
+
+var handlerMessageParser = function handlerMessageParser(_ref2) {
+  var removeMessage = _ref2.removeMessage,
+      toggleDone = _ref2.toggleDone;
+  return function (m) {
+    var mb = messageBuilder();
+    mb.createId(m.id);
+    mb.createDate(m.date);
+    mb.createAuthorName(m.authorName);
+    mb.createPayload(m.payload);
+    mb.createRemoveButton(removeMessage(m.id));
+
+    if (m.hasOwnProperty("done")) {
+      mb.renderDone(m.done);
+      mb.createDoneButton(toggleDone(m.id));
+    }
+
+    m.hasOwnProperty("canceled") && mb.renderCanceled(m.canceled);
+    return mb.build();
+  };
+};
+
+module.exports = {
+  userMessageParser: userMessageParser,
+  handlerMessageParser: handlerMessageParser
+};
+},{"./messageBuilder":"messageBuilder.js"}],"main.js":[function(require,module,exports) {
+var io = require("./socket.io");
+
+var _require = require("./messageParsers"),
+    userMessageParser = _require.userMessageParser,
+    handlerMessageParser = _require.handlerMessageParser;
+
+var socket = io();
+var user = {};
+var messageParser;
 
 var scrollDown = function scrollDown() {
-  return document.querySelector("#messages").scrollTo(0, document.querySelector("#messages").scrollHeight);
+  return window.scrollTo(0, document.body.scrollHeight);
 };
+/* FORM SUBMIT */
 
-var toggleDone = function toggleDone(id) {
-  messages[id].done ? socket.emit("undone", id) : socket.emit("done", id);
-};
 
-var removeMessage = function removeMessage(id) {
-  socket.emit("remove", id);
-};
-
-var createMessage = function createMessage(msg) {
-  var date = new Date(msg.date);
-  var $d = document.createElement("small");
-  $d.innerText = date.getHours().toString().padStart(2, "0") + " : " + date.getMinutes().toString().padStart(2, "0");
-  var $n = document.createElement("h5");
-  $n.innerText = msg.name;
-  var $t = document.createElement("p");
-  $t.innerText = msg.text;
-  var $m = document.createElement("li");
-  $m.id = "id" + msg.date;
-  var $e = document.createElement("button");
-  $e.innerText = "x";
-
-  $e.onclick = function (e) {
-    e.stopPropagation();
-    removeMessage(msg.date);
-  };
-
-  $m.append($d);
-  $m.append($n);
-  $m.append($t);
-  if (auth === msg.author) $m.append($e);
-
-  $m.onclick = function () {
-    toggleDone(msg.date);
-  };
-
-  if (msg.done) {
-    $m.classList.add("done");
-  }
-
-  return $m;
-};
-
-var socket = (0, _socket.default)();
-
-document.querySelector("form").onsubmit = function () {
-  socket.emit("message", document.querySelector("#m").value);
-  document.querySelector("#m").value = "";
+document.querySelector(".io-form").onsubmit = function () {
+  var data = [];
+  var inp = document.querySelectorAll("input");
+  inp.forEach(function (element) {
+    data.push({
+      name: element.name,
+      value: element.value
+    });
+    element.value = "";
+  });
+  socket.emit("message", data);
   return false;
 };
 
-socket.on("message", function (msg) {
-  var message = JSON.parse(msg); // abort when same message
+document.querySelectorAll(".collapse-control").forEach(function (e) {
+  return e.onclick = function () {
+    document.querySelector("#" + e.getAttribute("control-target")).classList.toggle("collapsed");
+  };
+});
 
-  if (messages[message.date]) return;
-  document.querySelector("#messages").append(createMessage(message));
-  messages[message.date] = message;
+var removeMessage = function removeMessage(id) {
+  return function () {
+    socket.emit("remove", id);
+  };
+};
+
+var cancelMessage = function cancelMessage(id) {
+  return function () {
+    socket.emit("cancel", id);
+  };
+};
+
+var toggleDone = function toggleDone(id) {
+  return function () {
+    socket.emit("toggleDone", id);
+  };
+};
+
+var addMessage = function addMessage(message) {
+  return message && document.querySelector("#messages").append(message);
+};
+/*** SOCKET EVENTS ***/
+
+
+socket.on("message", function (msg) {
+  var message = JSON.parse(msg);
+  addMessage(messageParser(message));
   scrollDown();
 });
 socket.on("done", function (id) {
-  messages[id].done = true;
   document.querySelector("#id" + id).classList.add("done");
 });
 socket.on("undone", function (id) {
-  messages[id].done = false;
   document.querySelector("#id" + id).classList.remove("done");
 });
 socket.on("remove", function (id) {
-  delete messages[id];
   document.querySelector("#id" + id).remove();
 });
-socket.on("authenticated", function (msg) {
-  auth = msg;
+socket.on("cancel", function (id) {
+  document.querySelector("#id" + id).classList.add("canceled");
 });
-socket.on("init", function (msg) {
+socket.on("authenticated", function (msg) {
+  user.id = msg.id;
+  user.userClass = msg.userClass;
+
+  if (user.userClass === "user") {
+    messageParser = userMessageParser({
+      cancelMessage: cancelMessage,
+      user: user
+    });
+  } else if (user.userClass === "handler") {
+    messageParser = handlerMessageParser({
+      removeMessage: removeMessage,
+      toggleDone: toggleDone
+    });
+  } else {
+    throw Error("Authentication failed, invalid userClass.");
+  }
+});
+socket.on("history", function (msg) {
   var serverHistory = JSON.parse(msg);
-  messages = serverHistory;
   document.querySelector("#messages").innerHTML = "";
 
-  for (var m in messages) {
-    document.querySelector("#messages").append(createMessage(messages[m]));
+  for (var m in serverHistory) {
+    addMessage(messageParser(serverHistory[m]));
   }
 
   scrollDown();
@@ -4331,7 +4500,26 @@ socket.on("init", function (msg) {
 socket.on("disconnect", function () {
   console.warn("disconnected");
 });
-},{"./socket.io":"socket.io.js"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+/****  TEST  ****/
+// const u = { id: "1234AB", name: "Papo", userClass: "user" };
+// const mp = userMessageParser({ cancelMessage, user: u });
+// const m = {
+//   id: Date.now(),
+//   date: Date.now(),
+//   authorId: "1234AB",
+//   authorName: "Pepa Nahlovsky",
+//   done: false,
+//   canceled: false,
+//   payload: [
+//     { name: "part-number", value: "324544658" },
+//     { name: "count", value: "2" },
+//     { name: "machine", value: "865545" },
+//     { name: "place", value: "12" },
+//     { name: "priority", value: "high" }
+//   ]
+// };
+// addMessage(mp(m));
+},{"./socket.io":"socket.io.js","./messageParsers":"messageParsers.js"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -4359,7 +4547,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "35305" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "46377" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

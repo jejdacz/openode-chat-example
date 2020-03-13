@@ -1,6 +1,14 @@
 @import "https://fonts.googleapis.com/css?family=Montserrat&display=swap";
-#messages li, form button, form input {
+#messages li.message, input,
+button {
   border-radius: 0.3rem;
+}
+
+#user-form, #handler-form {
+  position: fixed;
+  bottom: 0;
+  width: inherit;
+  background: inherit;
 }
 
 * {
@@ -11,81 +19,191 @@
 
 body {
   margin: 0 auto;
+  padding-top: 2rem;
   font-family: "Montserrat", sans-serif;
   background: #0d0d0d;
   color: #f2f2f2;
-  /*height: 90vh;
-  padding: $d1;
-  display: flex;
-  flex-direction: column;*/
   letter-spacing: 0.07rem;
   line-height: 1.5;
   width: 100%;
 }
 
-form {
-  display: flex;
-  margin-top: auto;
-  /*----*/
-  position: fixed;
-  bottom: 0;
-  width: inherit;
-  padding: 1rem;
-  background: inherit;
+input,
+button {
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+  border: none;
 }
 
-form input {
+input {
   font-size: 1rem;
-  border: 0;
   padding: 0.7rem;
   color: #364e56;
   background: #bdd4db;
-  margin-right: 1rem;
-  width: 70%;
-  flex-grow: 1;
+  height: 3rem;
 }
 
-form button {
-  font-size: 0.8rem;
+button {
+  font-size: 1.2rem;
   font-weight: 800;
-  color: #bdd4db;
-  background-color: #2d4953;
-  border: none;
+  color: #f2f6f7;
   padding: 0 1rem;
   line-height: 3rem;
+  user-select: none;
+  transition: all 0.2s ease-in;
+  background-color: #2d4953;
+}
+button:hover {
+  /* mobile: onhold release color */
+  background-color: #243b42;
+}
+button:active {
+  /* mobile: onclick color */
+  background: #1b2c32;
+}
+button:focus {
+  outline: none;
+  box-shadow: 0 0 1px 3px rgba(139, 179, 193, 0.7);
+}
+button.danger {
+  background-color: #cc1e1e;
+}
+button.danger:hover {
+  /* mobile: onhold release color */
+  background-color: #b61b1b;
+}
+button.danger:active {
+  /* mobile: onclick color */
+  background: #a01717;
+}
+button.danger:focus {
+  outline: none;
+  box-shadow: 0 0 1px 3px rgba(246, 192, 192, 0.7);
+}
+button.warning {
+  background-color: #b96712;
+}
+button.warning:hover {
+  /* mobile: onhold release color */
+  background-color: #a25a10;
+}
+button.warning:active {
+  /* mobile: onclick color */
+  background: #8b4d0d;
+}
+button.warning:focus {
+  outline: none;
+  box-shadow: 0 0 1px 3px rgba(246, 204, 161, 0.7);
+}
+
+form {
+  display: grid;
+  padding: 1rem;
+  gap: 1rem;
+}
+form div.inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+}
+
+#login-form input,
+#login-form button {
+  max-width: 20rem;
+}
+
+#handler-form {
+  display: flex;
+}
+#handler-form input {
+  margin-right: 1rem;
+  flex-grow: 1;
+}
+#handler-form button {
   flex-grow: 0.1;
+  margin-left: 0;
+  width: auto;
+}
+
+.collapse-subject {
+  transition: all 0.5s ease-in;
+}
+
+#user-form {
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+}
+#user-form.collapsed {
+  transform: translate(0, calc(100% - 5rem));
+  border-width: 10px;
+}
+#user-form label {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 #messages {
   list-style-type: none;
-  padding: 1rem 1rem 7rem 1rem;
-  /*overflow-y: auto;*/
+  padding: 1rem 1rem 5rem 1rem;
 }
-#messages li {
+#messages li.message {
+  display: grid;
+  gap: 0.5rem;
   padding: 1rem;
   margin-bottom: 1rem;
   background: #1a1a1a;
 }
-#messages li.hidden {
+#messages li.message.hidden {
   display: none;
 }
-#messages li.done p {
-  text-decoration: line-through;
+#messages li.message.done {
+  box-shadow: 0 0 1px 2px #38be0f;
 }
-#messages li small {
+#messages li.message small {
+  line-height: 1;
   font-size: 0.75rem;
   display: block;
-  color: #8d9a9e;
+  color: #cacaca;
 }
-#messages li p {
+#messages li.message h4 {
+  font-size: 1.2rem;
+  line-height: 1.2;
+  color: #ececec;
+}
+#messages li.message ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: 0.5rem;
+  list-style-type: none;
+}
+#messages li.message ul li h5 {
+  font-weight: 200;
+  font-size: 0.75rem;
+}
+#messages li.message ul li h5::after {
+  content: ":";
+}
+#messages li.message ul li p {
   color: #71bacc;
-  letter-spacing: 0.1rem;
+  letter-spacing: 0.12rem;
+  font-size: 0.9rem;
 }
-#messages li:nth-child(odd) {
+#messages li.message:nth-child(odd) {
   background: #333333;
 }
+#messages li.message.canceled {
+  background-color: #861c14;
+}
 
-@media (min-width: 45rem) {
+.caption {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+@media (min-width: 40rem) {
   body {
     width: 40rem;
   }

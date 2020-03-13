@@ -13,10 +13,19 @@
 
   <body>
     <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" />
+    <form id="user-form" class="io-form collapse-subject" action="">
+      <label class="collapse-control" control-target="user-form"
+        >Order form</label
+      >
+      <div class="inputs">
+        <input placeholder="part-number" name="pn" />
+        <input placeholder="count" name="count" />
+        <input placeholder="machine" name="machine" />
+        <input placeholder="place" name="place" />
+        <input placeholder="priority" name="priority" />
+      </div>
       <button>
-        Send
+        Place order
       </button>
     </form>
     <script src="./main.js"></script>

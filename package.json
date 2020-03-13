@@ -9,6 +9,7 @@
     "express": "^4.15.2",
     "express-jwt": "^5.3.1",
     "jsonwebtoken": "^8.5.1",
+    "ramda": "^0.27.0",
     "socket.io": "^1.7.3"
   },
   "scripts": {
@@ -17,6 +18,14 @@
     "dev": "parcel ./src/handler.html ./src/user.html ./src/login.html --public-url ./",
     "build": "rm ./dist/* & parcel build ./src/handler.html ./src/user.html ./src/login.html --public-url ./",
     "test-path": "node ./test/index.js"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "src/",
+      "dist/",
+      ".cache/"
+    ],
+    "delay": "2500"
   },
   "devDependencies": {
     "nodemon": "^2.0.2",
